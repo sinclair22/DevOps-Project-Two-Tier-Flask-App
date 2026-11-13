@@ -2,30 +2,27 @@
 
 A two-tier web application (**Flask** + **MySQL**) deployed on an **AWS EC2** instance through a fully automated CI/CD pipeline built with **Jenkins**, **Docker** and **Docker Compose**. A push to GitHub results in a fresh build and deployment, with no manual steps on the server.
 
-> Based on the original project by [prashantgohel321](https://github.com/prashantgohel321/DevOps-Project-Two-Tier-Flask-App). This fork updates the setup for **Ubuntu Server 26.04 LTS**, the **2026 Jenkins signing key** and **Java 21**, fixes several issues that break a first build, and adds a troubleshooting guide.
-
 ---
 
 ## Table of contents
 
 1. [Architecture](#architecture)
 2. [Tech stack](#tech-stack)
-3. [What changed from the original](#what-changed-from-the-original)
-4. [Prerequisites](#prerequisites)
-5. [Step 1: Launch the EC2 instance](#step-1-launch-the-ec2-instance)
-6. [Step 2: Connect with SSH](#step-2-connect-with-ssh)
-7. [Step 3: Prepare the server](#step-3-prepare-the-server)
-8. [Step 4: Install Docker and Docker Compose](#step-4-install-docker-and-docker-compose)
-9. [Step 5: Install Java and Jenkins](#step-5-install-java-and-jenkins)
-10. [Step 6: First-time Jenkins setup](#step-6-first-time-jenkins-setup)
-11. [Step 7: Create the pipeline job](#step-7-create-the-pipeline-job)
-12. [Step 8: Verify the deployment](#step-8-verify-the-deployment)
-13. [Step 9: Automatic builds (optional)](#step-9-automatic-builds-optional)
-14. [Stopping, restarting and cleaning up](#stopping-restarting-and-cleaning-up)
-15. [Troubleshooting](#troubleshooting)
-16. [Screenshots](#screenshots)
-17. [Future improvements](#future-improvements)
-18. [Credits](#credits)
+3. [Prerequisites](#prerequisites)
+4. [Step 1: Launch the EC2 instance](#step-1-launch-the-ec2-instance)
+5. [Step 2: Connect with SSH](#step-2-connect-with-ssh)
+6. [Step 3: Prepare the server](#step-3-prepare-the-server)
+7. [Step 4: Install Docker and Docker Compose](#step-4-install-docker-and-docker-compose)
+8. [Step 5: Install Java and Jenkins](#step-5-install-java-and-jenkins)
+9. [Step 6: First-time Jenkins setup](#step-6-first-time-jenkins-setup)
+10. [Step 7: Create the pipeline job](#step-7-create-the-pipeline-job)
+11. [Step 8: Verify the deployment](#step-8-verify-the-deployment)
+12. [Step 9: Automatic builds (optional)](#step-9-automatic-builds-optional)
+13. [Stopping, restarting and cleaning up](#stopping-restarting-and-cleaning-up)
+14. [Troubleshooting](#troubleshooting)
+15. [Screenshots](#screenshots)
+16. [Future improvements](#future-improvements)
+17. [Credits](#credits)
 
 ---
 
@@ -62,66 +59,12 @@ A two-tier web application (**Flask** + **MySQL**) deployed on an **AWS EC2** in
 | App | Python Flask |
 | Database | MySQL 8 |
 
-## What changed from the original
-
-| Area | Original | This version |
-|------|----------|--------------|
-| OS | Ubuntu 22.04 | Ubuntu Server 26.04 LTS |
-| Jenkins repo key | 2023 key (expired 26 March 2026) | 2026 key |
-| Java | OpenJDK 17 | OpenJDK 21 |
-| Health check | Compose calls `/health`, but the route did not exist | `/health` route added to `app.py` |
-| Image | `curl` missing from the slim Python image | `curl` installed in the Dockerfile |
-| Requirements file | `requirement.txt` vs `requirements.txt` mismatch | Names made identical |
-| Flask | `debug=True` | `debug=False` |
-| Jenkins branch | Default `*/master` | `*/main` |
-| Server sizing | Not covered | Swap file, 20 GiB disk, `/tmp` guidance |
-| Troubleshooting | None | Full guide below |
-
 ## Prerequisites
 
 - An AWS account (set a billing alert first under Billing > Budgets)
 - A GitHub account and a **public** fork of this repository
 - Git and a terminal on your laptop
 - Roughly 2 to 3 hours
-
-> **Tip:** Copy commands only from code blocks. Text copied from rendered web pages can carry Markdown link syntax (`[url](url)`), which makes bash fail with `syntax error near unexpected token '('`.
-
-### Repository fixes (do these first, on your laptop)
-
-```bash
-git clone https://github.com/<your-username>/DevOps-Project-Two-Tier-Flask-App.git
-cd DevOps-Project-Two-Tier-Flask-App
-```
-
-1. **Requirements filename.** Make the file name and the Dockerfile `COPY` line match:
-   ```bash
-   git mv requirement.txt requirements.txt   # only if your repo has requirement.txt
-   ```
-2. **Health route.** Add this to `app.py`, above the `if __name__ == '__main__':` block:
-   ```python
-   @app.route('/health')
-   def health():
-       return "OK", 200
-   ```
-3. **curl in the image.** Add `curl` to the Dockerfile's install line:
-   ```dockerfile
-   RUN apt-get update && apt-get install -y gcc default-libmysqlclient-dev pkg-config curl && \
-       rm -rf /var/lib/apt/lists/*
-   ```
-4. **Debug off.** In `app.py` use `app.run(host='0.0.0.0', port=5000, debug=False)`.
-5. **Jenkinsfile.** Point the clone stage at your own fork and the `main` branch:
-   ```groovy
-   git url: 'https://github.com/<your-username>/DevOps-Project-Two-Tier-Flask-App.git',
-       branch: 'main'
-   ```
-6. Commit and push:
-   ```bash
-   git add .
-   git commit -m "Add health route, curl in image, fix requirements filename, debug off"
-   git push origin main
-   ```
-
-`message.sql` does not need to be run manually: `init_db()` in `app.py` creates the `messages` table at startup.
 
 ---
 
